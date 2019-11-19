@@ -19,6 +19,7 @@ IF %ERRORLEVEL% NEQ 0 call "C:\Program Files (x86)\Microsoft Visual Studio\2019\
 :: /MD	   Multi-thread specific, DLL-specific runtime lib. (See /MDd, /MT, /MTd, /LD, /LDd).
 :: /GL	   Whole program optimization.
 :: /EHsc   No exception handling (Unwind semantics requrie vstudio env). (See /W1).
+:: /EHa    Asynchronous structured exception handling (SEH) with native C++ try/catch
 :: /I<arg> Specify include directory.
 
 ::
@@ -33,16 +34,19 @@ IF %ERRORLEVEL% NEQ 0 call "C:\Program Files (x86)\Microsoft Visual Studio\2019\
 :: "%~1" prefix the first command line arg with the string "..\..\"
 :: and remove quotations before seinding it as an argument to cl.
 
+set file_name=%~n1
+set file_extension=%~x1
+
 echo.
 echo [ STARTING COMPILATION ]
 
 mkdir msvc_landfill >nul 2>nul
 pushd msvc_landfill >nul
 
-cl %cd%\..\vulkan.cpp /W4 /WX ^
+cl %cd%\..\%file_name%%file_extension% /W4 /WX ^
 /I%cd%\.. ^
 /I%cd%\..\includes ^
-/DEBUG:NONE /Z7 /GL /GS /MD /EHsc /nologo ^
+/EHa /DEBUG:NONE /Z7 /GL /GS /MD /nologo ^
 /link /LIBPATH:%cd%/../libs /SUBSYSTEM:CONSOLE /NXCOMPAT /MACHINE:x64 /NODEFAULTLIB:MSVCRTD ^
 vulkan-1.lib ^
 glfw3.lib ^
@@ -51,7 +55,7 @@ user32.lib ^
 shell32.lib ^
 odbccp32.lib
 
-xcopy /y vulkan.exe ..\ >null
+xcopy /y %file_name%.exe ..\ >null
 popd >null
 
 echo [ COMPILATION COMPLETE ]
