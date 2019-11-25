@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <vector>
 #include <cstring>
+#include <assert.h>
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
@@ -23,10 +24,11 @@ const bool enableValidationLayers = true;
 const bool enableDebugInfoMessages = true; // Change to disable Debug [ Info ] messages.
 #endif
 
-VkResult CreateDebugUtilsMessengerEXT(VkInstance                                instance,
-                                      const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-                                      const VkAllocationCallbacks*              pAllocator,
-                                      VkDebugUtilsMessengerEXT*                 pDebugMessenger)
+VkResult
+CreateDebugUtilsMessengerEXT(VkInstance                                instance,
+                             const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+                             const VkAllocationCallbacks*              pAllocator,
+                             VkDebugUtilsMessengerEXT*                 pDebugMessenger)
 {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance,
                                                                           "vkCreateDebugUtilsMessengerEXT");
@@ -40,6 +42,22 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance                                
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 }
+
+
+void
+DestroyDebugUtilsMessengerEXT(VkInstance               instance,
+                              VkDebugUtilsMessengerEXT debugMessenger,
+                              VkAllocationCallbacks*   pAllocator)
+{
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance,
+                                         "vkDestroyDebugUtilsMessengerEXT");
+
+    if (func != nullptr)
+    {
+        func(instance, debugMessenger, pAllocator);
+    }
+}
+
 
 class HelloTriangleApplication
 {
@@ -108,14 +126,16 @@ private:
         else
         {
             std::cerr << "[ ERROR ] Validation layer: " << pCallbackData->pMessage << std::endl;
+            assert(false);
         }
         return VK_FALSE; // Determines if the calling Vulkan function should be aborted
     }
 
 
-    void setupDebugMessenger()
+    void
+    populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
     {
-        VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
+        createInfo = {};
         createInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
         createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
@@ -123,7 +143,7 @@ private:
 
         if (enableDebugInfoMessages)
         {
-            std::cout << "[ INFO ] Info messages enabled." << std::endl;
+            std::cout << "[ INFO ] Info messages [ enabled ]." << std::endl;
             createInfo.messageSeverity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
         }
 
@@ -131,6 +151,14 @@ private:
             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         createInfo.pfnUserCallback = debugCallback;
+    }
+
+
+    void setupDebugMessenger()
+    {
+        if (!enableValidationLayers) return;
+        VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
+        populateDebugMessengerCreateInfo(createInfo);
 
         if (CreateDebugUtilsMessengerEXT(vulkanInstance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
         {
@@ -177,6 +205,8 @@ private:
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
 
+        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {};
+
         // Check to see if validation layers are turned on. If so, validate that they are available and add them to the
         // createInfo struct.
         std::vector<const char*> extensions;
@@ -190,6 +220,9 @@ private:
 
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
+
+            populateDebugMessengerCreateInfo(debugCreateInfo);
+            createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
 
             // [ cfarvin::NOTE ] In the example, this was in it's own function, getRequiredExtensions()
             uint32_t glfwExtensionCount = 0;
@@ -220,7 +253,7 @@ private:
     {
         createVulkanInstance();
 
-        if (!enableValidationLayers)
+        if (enableValidationLayers)
         {
             setupDebugMessenger();
         }
@@ -240,11 +273,15 @@ private:
     void
     cleanup()
     {
+        if (enableValidationLayers)
+        {
+            DestroyDebugUtilsMessengerEXT(vulkanInstance, debugMessenger, nullptr);
+        }
+
         vkDestroyInstance(vulkanInstance, nullptr);
         glfwDestroyWindow(window);
         glfwTerminate();
     }
-
 
     GLFWwindow* window;
     VkInstance vulkanInstance;
