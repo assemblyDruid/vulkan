@@ -1,0 +1,1 @@
+A project following the vulkan-tutorial (and style, for the most part) by Alexander Overvoorde. I will likely re-do this in my own style once the tutorial is complete.

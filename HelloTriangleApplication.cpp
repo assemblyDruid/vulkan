@@ -21,8 +21,9 @@ const std::vector<const char*> validationLayers =
 const bool enableValidationLayers = false;
 #else
 const bool enableValidationLayers = true;
-const bool enableDebugInfoMessages = true; // Change to disable Debug [ Info ] messages.
+const bool enableDebugInfoMessages = false; // Change to disable Debug [ Info ] messages.
 #endif
+
 
 VkResult
 CreateDebugUtilsMessengerEXT(VkInstance                                instance,
@@ -50,7 +51,7 @@ DestroyDebugUtilsMessengerEXT(VkInstance               instance,
                               VkAllocationCallbacks*   pAllocator)
 {
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance,
-                                         "vkDestroyDebugUtilsMessengerEXT");
+                                                                            "vkDestroyDebugUtilsMessengerEXT");
 
     if (func != nullptr)
     {
@@ -63,18 +64,18 @@ class HelloTriangleApplication
 {
 public:
     void
-    run()
+    Run()
     {
-        initWindow();
-        initVulkan();
-        mainLoop();
-        cleanup();
+        InitWindow();
+        InitVulkan();
+        MainLoop();
+        Cleanup();
     }
 
 
 private:
     void
-    initWindow()
+    InitWindow()
     {
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -84,7 +85,7 @@ private:
 
 
     bool
-    checkValidationLayerSupport()
+    CheckValidationLayerSupport()
     {
         uint32_t layerCount = 0;
         vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -113,7 +114,7 @@ private:
 
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL
-    debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
+    DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
                   VkDebugUtilsMessageTypeFlagsEXT             messageType,
                   const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                   void*                                       pUserData)
@@ -126,14 +127,13 @@ private:
         else
         {
             std::cerr << "[ ERROR ] Validation layer: " << pCallbackData->pMessage << std::endl;
-            assert(false);
         }
         return VK_FALSE; // Determines if the calling Vulkan function should be aborted
     }
 
 
     void
-    populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+    PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
     {
         createInfo = {};
         createInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -150,15 +150,16 @@ private:
         createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        createInfo.pfnUserCallback = debugCallback;
+        createInfo.pfnUserCallback = DebugCallback;
     }
 
 
-    void setupDebugMessenger()
+    void
+    SetupDebugMessenger()
     {
         if (!enableValidationLayers) return;
         VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
-        populateDebugMessengerCreateInfo(createInfo);
+        PopulateDebugMessengerCreateInfo(createInfo);
 
         if (CreateDebugUtilsMessengerEXT(vulkanInstance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
         {
@@ -168,19 +169,9 @@ private:
 
 
     void
-    createVulkanInstance()
+    CreateVulkanInstance()
     {
-        // Vulkan Struct Documentation:
-        //
-        // typedef struct VkApplicationInfo {
-        //     VkStructureType    sType;              // The type of the structure
-        //     const void*        pNext;              // NULL or a pointer to an extension-specific structure
-        //     const char*        pApplicationName;   // NULL or a NULLTERM UTF8 string naming the application
-        //     uint32_t           applicationVersion; // Unsigned integer containing developer version of app
-        //     const char*        pEngineName;        // NULL or poitner to NULLTERM UTF8 with name of engine creating the app
-        //     uint32_t           engineVersion;      // Unsigned integer of engine version creating the app
-        //     uint32_t           apiVersion;         // *Must* be highest possible Vulkan version number
-        // } VkApplicationInfo;
+        // Specify application info
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = "Hello Triangle";
@@ -189,18 +180,7 @@ private:
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
-        // Vulkan Struct Documentation:
-        //
-        // typedef struct VkInstanceCreateInfo {
-        //     VkStructureType             sType;                   // The type of the structure
-        //     const void*                 pNext;                   // NULL or poitner to an extension-specific structure
-        //     VkInstanceCreateFlags       flags;                   // Reserved for future use
-        //     const VkApplicationInfo*    pApplicationInfo;        // NULL or VkApplicationInfo*
-        //     uint32_t                    enabledLayerCount;       // Number of global layers to enable
-        //     const char* const*          ppEnabledLayerNames;     // enabledLayerCount** NULLTERM UTF8 layer names
-        //     uint32_t                    enabledExtensionCount;   // Number of global extensions to enable
-        //     const char* const*          ppEnabledExtensionNames; // enabledExtensionCount NULLTERM UTF8 extension names
-        // } VkInstanceCreateInfo;
+        // Specify instance info
         VkInstanceCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
@@ -212,7 +192,7 @@ private:
         std::vector<const char*> extensions;
         if (enableValidationLayers)
         {
-            if (!checkValidationLayerSupport())
+            if (!CheckValidationLayerSupport())
             {
                 throw std::runtime_error("[ ERROR ] Validation layers requested, but not available.");
             }
@@ -221,7 +201,7 @@ private:
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
 
-            populateDebugMessengerCreateInfo(debugCreateInfo);
+            PopulateDebugMessengerCreateInfo(debugCreateInfo);
             createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
 
             // [ cfarvin::NOTE ] In the example, this was in it's own function, getRequiredExtensions()
@@ -248,20 +228,156 @@ private:
         }
     }
 
-    void
-    initVulkan()
-    {
-        createVulkanInstance();
 
-        if (enableValidationLayers)
+    // [ cfarvin::NOTE ] Physical devices are cleaned up when the instance is destroyed by default,
+    // and do not need to be manually cleaned up.
+    // [ cfarvin::DEVIATION ] We are going to deviate from the tutorial here and require that the
+    // same physical device be capable of *both* graphics and present functionality, understanding that
+    // this is poor production practice and should be taken into account at a later time.
+    void
+    FindGraphicsCompatibleDevice()
+    {
+        // Determine devices quantity
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(vulkanInstance, &deviceCount, nullptr);
+
+        if (!deviceCount)
         {
-            setupDebugMessenger();
+            throw std::runtime_error("[ ERROR ] No Vulkan compatible GPUs found.");
+        }
+
+        // Store all devices
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(vulkanInstance, &deviceCount, devices.data());
+
+        // Find and use the first graphics compatible device found
+        VkBool32 foundGraphicsCapableDevice = VK_FALSE;
+        VkBool32 foundPresentCapableDevice = VK_TRUE;
+        for (const auto& thisDevice : devices)
+        {
+            if (foundGraphicsCapableDevice && foundPresentCapableDevice) { break; }
+
+            // Determine queue family quantity per device
+            uint32_t queueFamilyCount = 0;
+            vkGetPhysicalDeviceQueueFamilyProperties(thisDevice, &queueFamilyCount, nullptr);
+
+            // Store all queue family properties per queue family
+            std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+            vkGetPhysicalDeviceQueueFamilyProperties(thisDevice,
+                                                     &queueFamilyCount,
+                                                     queueFamilies.data());
+
+            // Determine if any queue in any queue family is both graphics and present compatible
+            uint32_t queueFamilyIndex = 0;
+            for (const auto& queueFamily: queueFamilies)
+            {
+                // [ cfarvin::NOTE ] foundCapablePresentDevice is set in vkGetPhysicalDeviceSurfaceSupportKHR
+                vkGetPhysicalDeviceSurfaceSupportKHR(thisDevice,
+                                                     queueFamilyIndex,
+                                                     surface,
+                                                     &foundPresentCapableDevice);
+
+                if ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) && foundPresentCapableDevice)
+                {
+                    physicalDevice = thisDevice;
+                    foundGraphicsCapableDevice = VK_TRUE;
+                    GRAPHICAL_AND_PRESENT_QUEUE_FAMILY_INDEX = queueFamilyIndex;
+                    break;
+                }
+                queueFamilyIndex++;
+            }
+        }
+
+        // Ensure that a suitable physical device was successfuly aquired.
+        if (physicalDevice == VK_NULL_HANDLE)
+        {
+            if (!foundGraphicsCapableDevice)
+            {
+                std::cerr << "[ ERROR ] No graphics capable device found." << std::endl;
+            }
+
+            if (!foundPresentCapableDevice)
+            {
+                std::cerr << "[ ERROR ] No present capable device found." << std::endl;
+            }
+            throw std::runtime_error("[ ERROR ] No suitible  GPUs found.");
         }
     }
 
 
     void
-    mainLoop()
+    CreateLogicalDevice()
+    {
+        // Specify the queues to be created
+        VkDeviceQueueCreateInfo queueCreateInfo = {};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = GRAPHICAL_AND_PRESENT_QUEUE_FAMILY_INDEX;
+        queueCreateInfo.queueCount = 1;
+
+        float queuePriority = 1.0f;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+
+        // Specify device features
+        // [ cfarvin::TODO ] Come back to this when we want to do more than
+        // the initial setup.
+        VkPhysicalDeviceFeatures deviceFeatures = {};
+
+        // Specify logical device properties
+        VkDeviceCreateInfo createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        createInfo.pQueueCreateInfos = &queueCreateInfo;
+        createInfo.queueCreateInfoCount = 1;
+        createInfo.pEnabledFeatures = &deviceFeatures;
+        createInfo.enabledExtensionCount = 0;
+
+        if (enableValidationLayers)
+        {
+            createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+            createInfo.ppEnabledLayerNames = validationLayers.data();
+        }
+        else
+        {
+            createInfo.enabledLayerCount = 0;
+        }
+
+        // Create the logical device
+        if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
+        {
+            throw std::runtime_error("[ ERROR ] Failed to create logical deivce.");
+        }
+
+        vkGetDeviceQueue(device, GRAPHICAL_AND_PRESENT_QUEUE_FAMILY_INDEX, 0, &graphicsQueue);
+    }
+
+
+    void
+    CreateSurface()
+    {
+        if (glfwCreateWindowSurface(vulkanInstance, window, nullptr, &surface) != VK_SUCCESS)
+        {
+            throw std::runtime_error("[ ERROR ] Failed to create window surface.");
+        }
+    }
+
+
+    void
+    InitVulkan()
+    {
+        CreateVulkanInstance();
+
+        if (enableValidationLayers)
+        {
+            SetupDebugMessenger();
+        }
+
+        CreateSurface();
+        FindGraphicsCompatibleDevice();
+        CreateLogicalDevice();
+    }
+
+
+    void
+    MainLoop()
     {
         while(!glfwWindowShouldClose(window))
         {
@@ -271,21 +387,32 @@ private:
 
 
     void
-    cleanup()
+    Cleanup()
     {
+        // Vulkan cleanup
         if (enableValidationLayers)
         {
             DestroyDebugUtilsMessengerEXT(vulkanInstance, debugMessenger, nullptr);
         }
 
+        vkDestroyDevice(device, nullptr);
+        vkDestroySurfaceKHR(vulkanInstance, surface, nullptr);
         vkDestroyInstance(vulkanInstance, nullptr);
+
+        // GLFW Cleanup
         glfwDestroyWindow(window);
         glfwTerminate();
     }
 
-    GLFWwindow* window;
-    VkInstance vulkanInstance;
+    GLFWwindow*              window = nullptr;
+    VkInstance               vulkanInstance;
     VkDebugUtilsMessengerEXT debugMessenger;
+    VkPhysicalDevice         physicalDevice = VK_NULL_HANDLE;
+    VkDevice                 device; // [ cfarvin::NOTE ] Think "logcial device"
+    uint32_t                 GRAPHICAL_AND_PRESENT_QUEUE_FAMILY_INDEX;
+    uint32_t                 PRESENT_QUEUE_FMAILY_INDEX;
+    VkQueue                  graphicsQueue;
+    VkSurfaceKHR             surface;
 };
 
 
@@ -298,7 +425,7 @@ main(int argc, char** argv)
 
     try
     {
-        app.run();
+        app.Run();
     }
     catch (const std::exception& e)
     {
